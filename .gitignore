@@ -1,0 +1,9 @@
+# Vim junk
+*.swp
+
+# ino junk
+.build
+
+# Test junk
+test/*.o
+test/testpacket
