@@ -61,6 +61,15 @@ class Packet {
      */
     boolean readCompleted();
 
+    /**
+     * Reads the next full package from the specified stream. It will 
+     * continue reading until a complete packet is read, or it will 
+     * continue to read a packet if interrupted from a previous
+     * read attempt.
+     *
+     * Returns true if a complete and valid packet was read, false
+     * otherwise.
+     */
     static boolean read(Stream &s, Packet& packet);
   private:
 
