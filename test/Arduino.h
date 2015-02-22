@@ -16,6 +16,7 @@ class Stream {
     // -- Standard stream interface
     boolean available();
     uint8_t read();
+    void write(uint8_t *b, int l);
 
     // -- Testing interface
     void reset();

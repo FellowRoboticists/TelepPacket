@@ -51,13 +51,8 @@ boolean Packet::valid() {
     sum += mBuffer[i];
   }
 
-  //cout << endl << "Sum = " << (int) sum << endl;
-  //cout << "Current index = " << mCurrentIndex << endl;
-  //cout << "Checksum = " << (int) mBuffer[mCurrentIndex -1] << endl;
-
   return mBuffer[0] == PKT_START_BYTE && 
     readCompleted() &&
-    // mBuffer[PKT_LENGTH_BYTE] + 3 == mCurrentIndex && 
     sum == mBuffer[mCurrentIndex - 1];
 }
 
@@ -80,10 +75,15 @@ boolean Packet::readCompleted() {
 
   return mBuffer[PKT_LENGTH_BYTE] + 3 == mCurrentIndex;
 }
+
+void Packet::write(Stream& s) {
+  s.write(mBuffer, length());
+}
  
 /* static */ boolean Packet::read(Stream& s, Packet& packet) {
   boolean started = packet.length() > 1;
-  while (s.available()) {
+  int bytesAvailable = s.available();
+  for (int i=0; i<bytesAvailable; i++) {
     uint8_t b = s.read();
     if (started) {
       packet.append(b);

@@ -62,6 +62,11 @@ class Packet {
     boolean readCompleted();
 
     /**
+     * Writes the contents of the packet to the specified stream.
+     */
+    void write(Stream &s);
+
+    /**
      * Reads the next full package from the specified stream. It will 
      * continue reading until a complete packet is read, or it will 
      * continue to read a packet if interrupted from a previous
@@ -71,6 +76,7 @@ class Packet {
      * otherwise.
      */
     static boolean read(Stream &s, Packet& packet);
+
   private:
 
     uint16_t mCurrentIndex;

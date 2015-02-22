@@ -221,7 +221,8 @@ Stream::Stream() {
 }
 
 boolean Stream::available() {
-  return mCurrentIndex > 0 && mCurrentReadIndex < mCurrentIndex;
+  return mCurrentIndex - mCurrentReadIndex;
+  // return mCurrentIndex > 0 && mCurrentReadIndex < mCurrentIndex;
 }
 
 void Stream::reset() {
@@ -242,6 +243,10 @@ uint8_t Stream::read() {
   } else {
     return 0;
   }
+}
+
+void Stream::write(uint8_t *b, int l) {
+  // Do nothing
 }
 
 
