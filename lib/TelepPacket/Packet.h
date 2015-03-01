@@ -12,6 +12,24 @@ class Packet {
     Packet();
 
     /**
+     * Constructs a new packet populated with the buffer. It is
+     * assumed that the buffer does NOT have a check sum byte
+     * calculated and the constructor should call complete once
+     * loaded. The buffer should NOT have a start byte.
+     */
+    Packet(uint8_t *buffer, uint16_t length);
+
+    /**
+     * Constructs a new packet populated with the buffer. If the 
+     * complete flag is true, then it is assumed that the packet
+     * does NOT have a check sum byte calculated and complete 
+     * will be called. If the complete flag is false, then the
+     * contents of the buffer are loaded, but complete is not
+     * called. The buffer should NOT have a start byte.
+     */
+    Packet(uint8_t *buffer, uint16_t length, boolean complete);
+
+    /**
      * Clears the current buffer adds the start byte and resets 
      * the current index to 1.
      */
@@ -65,6 +83,12 @@ class Packet {
      * Writes the contents of the packet to the specified stream.
      */
     void write(Stream &s);
+
+    /**
+     * Returns the value of the buffer at the specified index.
+     * Returns 0x00 if the index is invalid.
+     */
+    uint8_t valueAt(uint16_t index);
 
     /**
      * Reads the next full package from the specified stream. It will 

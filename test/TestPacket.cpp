@@ -22,6 +22,7 @@ using namespace std;
 
 class TestPacket : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(TestPacket);
+  CPPUNIT_TEST(testConstructors);
   CPPUNIT_TEST(testReset);
   CPPUNIT_TEST(testAppend);
   CPPUNIT_TEST(testLength);
@@ -30,6 +31,7 @@ class TestPacket : public CppUnit::TestFixture {
   CPPUNIT_TEST(testValid);
   CPPUNIT_TEST(testReadCompleted);
   CPPUNIT_TEST(testRead);
+  CPPUNIT_TEST(testValueAt);
   CPPUNIT_TEST_SUITE_END();
 
   public:
@@ -38,6 +40,7 @@ class TestPacket : public CppUnit::TestFixture {
     void tearDown(void);
 
   protected:
+    void testConstructors(void);
     void testLength(void);
     void testAppend(void);
     void testReset(void);
@@ -46,6 +49,7 @@ class TestPacket : public CppUnit::TestFixture {
     void testValid(void);
     void testReadCompleted(void);
     void testRead(void);
+    void testValueAt(void);
 
   private:
 
@@ -59,6 +63,16 @@ void TestPacket::setUp(void) {
 
 void TestPacket::tearDown(void) {
   delete mPacket;
+}
+
+void TestPacket::testConstructors(void) {
+  uint8_t readyBuffer[] ={ 0x02, 0x00, 0x00 };
+  uint8_t fullBuffer[] = { 0x02, 0xf2, 0xf3, 0xfa };
+
+  Packet readyPacket(readyBuffer, 3);
+  CPPUNIT_ASSERT(readyPacket.valid());
+  Packet fullPacket(fullBuffer, 4, false);
+  CPPUNIT_ASSERT(fullPacket.valid());
 }
 
 void TestPacket::testLength(void) {
@@ -122,6 +136,19 @@ void TestPacket::testReadCompleted(void) {
   CPPUNIT_ASSERT(! mPacket->readCompleted());
   mPacket->complete();
   CPPUNIT_ASSERT(mPacket->readCompleted());
+}
+
+void TestPacket::testValueAt(void) {
+  mPacket->append(0x02);
+  mPacket->append(0xf2);
+  mPacket->append(0xf3);
+  mPacket->complete();
+
+  CPPUNIT_ASSERT(0x13 == mPacket->valueAt(0));
+  CPPUNIT_ASSERT(0x02 == mPacket->valueAt(1));
+  CPPUNIT_ASSERT(0xf2 == mPacket->valueAt(2));
+  CPPUNIT_ASSERT(0xf3 == mPacket->valueAt(3));
+  CPPUNIT_ASSERT(0xfa == mPacket->valueAt(4));
 }
 
 void TestPacket::testRead(void) {

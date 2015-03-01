@@ -7,6 +7,19 @@ Packet::Packet() {
   reset();
 }
 
+Packet::Packet(uint8_t *buffer, uint16_t length) : Packet(buffer, length, true) {
+}
+
+Packet::Packet(uint8_t *buffer, uint16_t length, boolean completePacket) {
+  reset();
+  for (int i=0; i<length; i++) {
+    append(buffer[i]);
+  }
+  if (completePacket) {
+    complete();
+  }
+}
+
 void Packet::reset() {
   mBuffer[0] = PKT_START_BYTE;
   mCurrentIndex = 1;
@@ -78,6 +91,14 @@ boolean Packet::readCompleted() {
 
 void Packet::write(Stream& s) {
   s.write(mBuffer, length());
+}
+
+uint8_t Packet::valueAt(uint16_t index) {
+  if (index < 0 || index >= mCurrentIndex) {
+    return 0x00;
+  } else {
+    return mBuffer[index];
+  }
 }
  
 /* static */ boolean Packet::read(Stream& s, Packet& packet) {
