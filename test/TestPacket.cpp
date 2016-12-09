@@ -32,6 +32,8 @@ class TestPacket : public CppUnit::TestFixture {
   CPPUNIT_TEST(testReadCompleted);
   CPPUNIT_TEST(testRead);
   CPPUNIT_TEST(testValueAt);
+  CPPUNIT_TEST(testNextValue);
+  CPPUNIT_TEST(testNextValue1);
   CPPUNIT_TEST_SUITE_END();
 
   public:
@@ -50,6 +52,8 @@ class TestPacket : public CppUnit::TestFixture {
     void testReadCompleted(void);
     void testRead(void);
     void testValueAt(void);
+    void testNextValue(void);
+    void testNextValue1(void);
 
   private:
 
@@ -67,7 +71,7 @@ void TestPacket::tearDown(void) {
 
 void TestPacket::testConstructors(void) {
   uint8_t readyBuffer[] ={ 0x02, 0x00, 0x00 };
-  uint8_t fullBuffer[] = { 0x02, 0xf2, 0xf3, 0xfa };
+  uint8_t fullBuffer[] = { 0x02, 0xf2, 0xf3, 0x06 };
 
   Packet readyPacket(readyBuffer, 3);
   CPPUNIT_ASSERT(readyPacket.valid());
@@ -103,8 +107,7 @@ void TestPacket::testCalculateChecksum(void) {
   mPacket->append(0x02);
   mPacket->append(0xf2);
   mPacket->append(0xf3);
-  // cout << "Checksum = " << (int)mPacket->calculateChecksum() << endl;
-  CPPUNIT_ASSERT(0xfa == mPacket->calculateChecksum());
+  CPPUNIT_ASSERT(((0xfa + mPacket->calculateChecksum()) & 0x00ff) == 0);
 }
 
 void TestPacket::testComplete(void) {
@@ -148,7 +151,47 @@ void TestPacket::testValueAt(void) {
   CPPUNIT_ASSERT(0x02 == mPacket->valueAt(1));
   CPPUNIT_ASSERT(0xf2 == mPacket->valueAt(2));
   CPPUNIT_ASSERT(0xf3 == mPacket->valueAt(3));
-  CPPUNIT_ASSERT(0xfa == mPacket->valueAt(4));
+  CPPUNIT_ASSERT(0x06 == mPacket->valueAt(4));
+}
+
+void TestPacket::testNextValue(void) {
+  mPacket->append(0x05);
+  mPacket->append(0x01);
+  mPacket->append(0x0e);
+  mPacket->append(0x02);
+  mPacket->append(0x00);
+  mPacket->append(0x0f);
+  mPacket->complete();
+
+  CPPUNIT_ASSERT(0x01 == mPacket->nextValue(1)); // Type 1
+  CPPUNIT_ASSERT(0x0e == mPacket->nextValue(1)); // Value 1
+  CPPUNIT_ASSERT(0x02 == mPacket->nextValue(1)); // Type 2
+  CPPUNIT_ASSERT(0x0f == mPacket->nextValue(2)); // Value 2
+  uint16_t value = mPacket->nextValue(1);
+  // cout << "End of Buffer = " << (int)value << endl;
+  CPPUNIT_ASSERT(0xffff == value); // Past end of buffer
+
+}
+
+void TestPacket::testNextValue1(void) {
+  uint16_t value1 = 285;
+  uint16_t value2 = 391;
+
+  mPacket->append(0x05);
+  mPacket->append(0x01);
+  mPacket->append(value1 >> 8);
+  mPacket->append(value1 & 0x00ff);
+  mPacket->append(value2 >> 8);
+  mPacket->append(value2 & 0x00ff);
+  mPacket->complete();
+
+  CPPUNIT_ASSERT(0x01 == mPacket->nextValue(1)); // Type 1
+  CPPUNIT_ASSERT(285 == mPacket->nextValue(2)); // Value 1
+  CPPUNIT_ASSERT(391 == mPacket->nextValue(2)); // Value 2
+  uint16_t value = mPacket->nextValue(1);
+  // cout << "End of Buffer = " << (int)value << endl;
+  CPPUNIT_ASSERT(0xffff == value); // Past end of buffer
+
 }
 
 void TestPacket::testRead(void) {
@@ -158,7 +201,7 @@ void TestPacket::testRead(void) {
   s.append(0x02);
   s.append(0xf2);
   s.append(0xf3);
-  s.append(0xfa);
+  s.append(0x06);
 
   CPPUNIT_ASSERT(Packet::read(s, *mPacket));
   CPPUNIT_ASSERT(mPacket->readCompleted());
@@ -170,7 +213,7 @@ void TestPacket::testRead(void) {
   s.append(0x02);
   s.append(0xf2);
   s.append(0xf3);
-  s.append(0xfa);
+  s.append(0x06);
   s.append(0x13);
   
   mPacket->reset();
@@ -191,7 +234,7 @@ void TestPacket::testRead(void) {
 
   // We complete the packet using a replenished stream
   s.reset();
-  s.append(0xfa);
+  s.append(0x06);
   s.append(0x13);
 
   // Don't reset the packet
@@ -209,7 +252,7 @@ void TestPacket::testRead(void) {
   s.append(0x02);
   s.append(0xf2);
   s.append(0xf3);
-  s.append(0xfa);
+  s.append(0x06);
 
   mPacket->reset();
   CPPUNIT_ASSERT(Packet::read(s, *mPacket));
@@ -224,7 +267,7 @@ void TestPacket::testRead(void) {
   s.append(0x02);
   s.append(0xf2);
   s.append(0xf3);
-  s.append(0xfa);
+  s.append(0x06);
 
   mPacket->reset();
   CPPUNIT_ASSERT(! Packet::read(s, *mPacket));

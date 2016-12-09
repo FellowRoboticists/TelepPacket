@@ -21,6 +21,7 @@ Packet::Packet(uint8_t *buffer, uint16_t length, boolean completePacket) {
 }
 
 void Packet::reset() {
+  mValueIndex = 0;
   mBuffer[0] = PKT_START_BYTE;
   mCurrentIndex = 1;
 }
@@ -66,7 +67,7 @@ boolean Packet::valid() {
 
   return mBuffer[0] == PKT_START_BYTE && 
     readCompleted() &&
-    sum == mBuffer[mCurrentIndex - 1];
+    ((sum + mBuffer[mCurrentIndex - 1]) & 0x00ff) == 0;
 }
 
 uint8_t Packet::calculateChecksum() {
@@ -74,7 +75,7 @@ uint8_t Packet::calculateChecksum() {
   for (int i=0; i<mCurrentIndex; i++) {
     sum += mBuffer[i];
   }
-  return sum;
+  return -sum;
 }
 
 boolean Packet::readCompleted() {
@@ -99,6 +100,29 @@ uint8_t Packet::valueAt(uint16_t index) {
   } else {
     return mBuffer[index];
   }
+}
+
+uint16_t Packet::nextValue(uint8_t valueLength) {
+  if (mValueIndex == 0) {
+    mValueIndex = 2;
+  } else if (mValueIndex >= (mCurrentIndex - 1)) {
+    mValueIndex = -1;
+  }
+
+  //cout << "Index = " << (int) mValueIndex << endl;
+  //cout << "Current Index = " << (int) mCurrentIndex << endl;
+
+  uint16_t value = 0xffff;
+  if (mValueIndex > 1 && mValueIndex < MAX_PACKET_SIZE) {
+    if (valueLength == 1) {
+      value = mBuffer[mValueIndex++];
+    } else if (valueLength == 2) {
+      value = mBuffer[mValueIndex++] << 8;
+      value |= mBuffer[mValueIndex++];
+    }
+  }
+
+  return value;
 }
  
 /* static */ boolean Packet::read(Stream& s, Packet& packet) {

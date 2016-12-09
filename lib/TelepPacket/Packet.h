@@ -91,6 +91,13 @@ class Packet {
     uint8_t valueAt(uint16_t index);
 
     /**
+     * Returns the next value in the buffer of the specified length. If
+     * this is the first value read, the index will start at the byte
+     * immediately past the length byte.
+     */
+    uint16_t nextValue(uint8_t valueLength);
+
+    /**
      * Reads the next full package from the specified stream. It will 
      * continue reading until a complete packet is read, or it will 
      * continue to read a packet if interrupted from a previous
@@ -104,5 +111,6 @@ class Packet {
   private:
 
     uint16_t mCurrentIndex;
+    uint16_t mValueIndex;
     uint8_t mBuffer[MAX_PACKET_SIZE];
 };
