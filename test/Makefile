@@ -1,7 +1,7 @@
 CXX = g++
 INCLUDES = -I . -I ../lib/TelepPacket
 CXXFLAGS = -g $(INCLUDES) -std=gnu++11
-OBJM = Packet.o
+OBJM = Packet.o CommandPacket.o
 LINKFLAGS = -lcppunit
 
 testpacket: TestPacket.cpp $(OBJM)
@@ -11,7 +11,10 @@ test: testpacket
 	./testpacket
 
 
-Packet.o: ../lib/TelepPacket/Packet.cpp
+Packet.o: ../lib/TelepPacket/Packet.cpp ../lib/TelepPacket/Packet.h
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+CommandPacket.o: ../lib/TelepPacket/CommandPacket.cpp ../lib/TelepPacket/CommandPacket.h
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Default Compile

@@ -16,9 +16,158 @@
 #include <netinet/in.h>
 
 #include "Packet.h"
+#include "CommandPacket.h"
 
 using namespace CppUnit;
 using namespace std;
+
+class TestCommandPacket : public CppUnit::TestFixture {
+  CPPUNIT_TEST_SUITE(TestCommandPacket);
+  CPPUNIT_TEST(testConstructors);
+  CPPUNIT_TEST(testReadCompleted);
+  CPPUNIT_TEST(testValid);
+  CPPUNIT_TEST(testRead);
+  CPPUNIT_TEST(testNextValue);
+  CPPUNIT_TEST_SUITE_END();
+
+  public:
+
+    void setUp(void);
+    void tearDown(void);
+
+  protected:
+
+    void testConstructors(void);
+    void testReadCompleted(void);
+    void testValid(void);
+    void testRead(void);
+    void testNextValue(void);
+
+  private:
+
+    CommandPacket *mPacket;
+
+};
+
+void TestCommandPacket::setUp(void) {
+  mPacket = new CommandPacket(0x49, 5);
+}
+
+void TestCommandPacket::tearDown(void) {
+  delete mPacket;
+}
+
+void TestCommandPacket::testConstructors(void) {
+
+}
+
+void TestCommandPacket::testReadCompleted(void) {
+  CPPUNIT_ASSERT(! mPacket->readCompleted());
+  mPacket->append(0x49);
+  CPPUNIT_ASSERT(! mPacket->readCompleted());
+  mPacket->append(0x01);
+  CPPUNIT_ASSERT(! mPacket->readCompleted());
+  mPacket->append(0x02);
+  CPPUNIT_ASSERT(! mPacket->readCompleted());
+  mPacket->append(0x03);
+  CPPUNIT_ASSERT(! mPacket->readCompleted());
+  mPacket->append(0x04);
+  CPPUNIT_ASSERT(mPacket->readCompleted());
+};
+
+void TestCommandPacket::testValid(void) {
+  // Valid packet first
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x49);
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x01);
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x02);
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x03);
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x04);
+  CPPUNIT_ASSERT(mPacket->valid());
+
+  mPacket->reset();
+
+  // Now, an inalid packet
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x22);
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x01);
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x02);
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x03);
+  CPPUNIT_ASSERT(! mPacket->valid());
+  mPacket->append(0x04);
+  CPPUNIT_ASSERT(! mPacket->valid());
+}
+
+void TestCommandPacket::testRead(void) {
+  // Stream contains exactly the packet we want
+  Stream s;
+  s.append(0x49);
+  s.append(0x02);
+  s.append(0xf2);
+  s.append(0xf3);
+  s.append(0x06);
+
+  CPPUNIT_ASSERT(CommandPacket::read(s, *mPacket));
+  CPPUNIT_ASSERT(mPacket->readCompleted());
+  CPPUNIT_ASSERT(mPacket->valid());
+
+  // Stream contains more than we want
+  s.reset();
+  s.append(0x49);
+  s.append(0x02);
+  s.append(0xf2);
+  s.append(0xf3);
+  s.append(0x06);
+  s.append(0x13);
+  
+  mPacket->reset();
+  CPPUNIT_ASSERT(CommandPacket::read(s, *mPacket));
+  CPPUNIT_ASSERT(mPacket->readCompleted());
+  CPPUNIT_ASSERT(mPacket->valid());
+
+  // Stream contains just short of what we need
+  s.reset();
+  s.append(0x49);
+  s.append(0x02);
+  s.append(0xf2);
+  s.append(0xf3);
+
+  mPacket->reset();
+  CPPUNIT_ASSERT(! CommandPacket::read(s, *mPacket));
+  CPPUNIT_ASSERT(! mPacket->readCompleted());
+
+  // We complete the packet using a replenished stream
+  s.reset();
+  s.append(0x06);
+  s.append(0x13);
+
+  // Don't reset the packet
+  CPPUNIT_ASSERT(CommandPacket::read(s, *mPacket));
+  CPPUNIT_ASSERT(mPacket->readCompleted());
+  CPPUNIT_ASSERT(mPacket->valid());
+}
+
+void TestCommandPacket::testNextValue(void) {
+  mPacket->append(0x49);
+  mPacket->append(0x01);
+  mPacket->append(0x02);
+  mPacket->append(0x03);
+  mPacket->append(0x04);
+  CPPUNIT_ASSERT(mPacket->valid());
+
+  CPPUNIT_ASSERT(258 == mPacket->nextValue(2));
+  CPPUNIT_ASSERT(772 == mPacket->nextValue(2));
+}
+
+// ###################################################################
+// ###################################################################
 
 class TestPacket : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(TestPacket);
@@ -281,6 +430,7 @@ void TestPacket::testRead(void) {
 }
 
 CPPUNIT_TEST_SUITE_REGISTRATION( TestPacket );
+CPPUNIT_TEST_SUITE_REGISTRATION( TestCommandPacket );
 
 // -------------------------------------------------------------
 // Serial Method definition
